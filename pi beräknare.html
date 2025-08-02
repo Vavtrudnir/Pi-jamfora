@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Pi-beräknare och Jämförare</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #output, #compareOutput { white-space: pre-wrap; word-wrap: break-word; margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Beräkna π med valfri precision</h1>
+    <label for="digits">Antal decimaler:</label>
+    <input type="number" id="digits" min="1" max="10000" value="100">
+    <button onclick="calculatePi()">Beräkna</button>
+    <div id="output"></div>
+
+    <script>
+        let calculatedPi = '';  // Global variabel för att lagra beräknad π-sträng
+
+        function calculatePi() {
+            const digitsInput = document.getElementById('digits');
+            const output = document.getElementById('output');
+            output.textContent = 'Beräknar... (kan ta tid för många decimaler)';
+
+            const digits = parseInt(digitsInput.value);
+            if (isNaN(digits) || digits < 1) {
+                output.textContent = 'Ange ett giltigt antal decimaler.';
+                return;
+            }
+
+            // Extra precision för att säkerställa noggrannhet
+            const extra = 20n;
+            const precision = BigInt(digits) + extra;
+
+            let i = 1n;
+            let x = 3n * (10n ** precision);
+            let pi = x;
+            while (x > 0n) {
+                x = x * i / ((i + 1n) * 4n);
+                pi += x / (i + 2n);
+                i += 2n;
+            }
+
+            const piBig = pi / (10n ** extra);
+            const piStr = piBig.toString();
+
+            // Formatera som "3.14159..." med exakt antal decimaler
+            let integerPart = piStr[0];
+            let decimalPart = piStr.slice(1, 1 + digits);
+            // Om för kort, padda med nollor (sällsynt)
+            if (decimalPart.length < digits) {
+                decimalPart += '0'.repeat(digits - decimalPart.length);
+            }
+            const result = integerPart + '.' + decimalPart;
+
+            output.textContent = result;
+            calculatedPi = result;  // Spara resultatet för jämförelse
+        }
+
+        function compareWithPi() {
+            const userPi = document.getElementById('userPi').value.trim();
+            const output = document.getElementById('compareOutput');
+
+            if (!calculatedPi) {
+                output.textContent = 'Beräkna π först!';
+                return;
+            }
+
+            if (!userPi.includes('.')) {
+                output.textContent = 'Din sträng måste vara i formatet "3.14159..." med decimalpunkt.';
+                return;
+            }
+
+            // Beräkna antal decimaler i användarens sträng
+            const userParts = userPi.split('.');
+            if (userParts.length !== 2 || userParts[0] !== '3') {
+                output.textContent = 'Din sträng måste börja med "3." följt av decimaler.';
+                return;
+            }
+            const userDecimals = userParts[1].length;
+
+            // Jämför strängarna för att hitta antal matchande decimaler och matchande längd
+            let matchingLength = 0;
+            const minLength = Math.min(calculatedPi.length, userPi.length);
+            for (let i = 0; i < minLength; i++) {
+                if (calculatedPi[i] !== userPi[i]) {
+                    break;
+                }
+                matchingLength = i + 1;
+            }
+
+            let matchingDecimals = 0;
+            if (matchingLength >= 2) {
+                matchingDecimals = matchingLength - 2;
+            }
+
+            // Justera om hela den kortare strängen matchar
+            if (userPi.length < calculatedPi.length && matchingLength === userPi.length) {
+                matchingDecimals = userDecimals;
+            } else if (calculatedPi.length < userPi.length && matchingLength === calculatedPi.length) {
+                matchingDecimals = calculatedPi.length - 2;
+            }
+
+            // Beräkna procent av den beräknade strängen som stämmer
+            const percentage = ((matchingLength / calculatedPi.length) * 100).toFixed(2);
+
+            let resultText = `Antal decimaler i din sträng: ${userDecimals}\n`;
+            resultText += `Antal decimaler som stämmer: ${matchingDecimals}\n`;
+            resultText += `Procent av den beräknade strängen som stämmer: ${percentage}%\n\n`;
+
+            if (matchingDecimals === userDecimals && userDecimals > 0) {
+                resultText += 'Alla decimaler i din sträng matchar!\n';
+            } else if (matchingDecimals === 0) {
+                resultText += 'Inga decimaler matchar.\n';
+            } else {
+                resultText += 'Strängarna matchar delvis.\n';
+            }
+
+            output.textContent = resultText;
+        }
+    </script>
+</body>
+</html>
